@@ -16,12 +16,18 @@ struct Node{
     }
 
     bool is_leaf(){ return elements.size()==1; }
-};
 
-struct sort_neighs{
-    bool operator()(const Rectangle &R1, const Rectangle &R2){
-        double r1_dist = R1.get_dist(Rectangle({0,0},{0,0}));
-        double r2_dist = R2.get_dist(Rectangle({0,0},{0,0}));
-        return r1_dist < r2_dist;
+    void add_element(Neighborhood neighborhood){
+        data.push_back(neighborhood);
+        sort(data.begin(), data.end(),&sort_neighs);
     }
 };
+
+
+bool sort_neighs(const Neighborhood &N1, const Neighborhood &N2){
+    Rectangle R1 = N1.get_bounds();
+    Rectangle R2 = N2.get_bounds();
+    double r1_dist = R1.get_dist(Rectangle({0,0},{0,0}));
+    double r2_dist = R2.get_dist(Rectangle({0,0},{0,0}));
+    return r1_dist < r2_dist;
+}

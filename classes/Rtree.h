@@ -67,13 +67,11 @@ Node* Rtree::search_rec(Node* temp, Rectangle rect){
 
 
 void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
-    auto elems = temp->elements;
-    auto data = temp->data;
+    map<Rectangle,Node*> elems = temp->elements;
     if(elems.size()<max_range){
         if(temp->is_leaf()){
-            data.push_back(neighborhood);
-            sort(data.begin(), data.end(),sort_neighs());
-            if(data.size()>max_range){
+            temp->add_element(neighborhood);
+            if(temp->data.size()>max_range){
                 overflow_leaf(temp);
             }
         }
@@ -91,23 +89,24 @@ void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
 
 void Rtree::overflow_leaf(Node* temp){
     Rectangle R1 = temp->data[0].get_bounds();
-    Rectangle R2 = temp->data[max_range-1].get_bounds();
-    vector<Neighborhood> vec1;
-    vector<Neighborhood> vec2;
-    for(int i = 1; i<max_range-1; i++){
+    Rectangle R2 = temp->data[max_range].get_bounds();
+    Node* node1 = new Node();
+    Node* node2 = new Node();
+
+    node1->add_element(temp->data[0]);
+    node2->add_element(temp->data[max_range]);
+
+    for(int i = 1; i<max_range; i++){
         if(R1.get_dist(temp->data[i].get_bounds())<R2.get_dist(temp->data[i].get_bounds()))
-            vec1.push_back(temp->data[i]);
-        else vec2.push_back(temp->data[i]);
+            node1->add_element(temp->data[i]);
+        else node2->add_element(temp->data[i]);
     }
-    Node* left_node = new Node();
-    Node* right_node = new Node();
-    left_node->data = vec1;
-    right_node->data = vec2;
-    Rectangle MBR1 = MBR(vec1);
-    Rectangle MBR2 = MBR(vec2);
+    
+    Rectangle MBR1 = MBR(node1->data);
+    Rectangle MBR2 = MBR(node2->data);
     map<Rectangle,Node*> new_elements;
-    new_elements.insert({MBR1,left_node});
-    new_elements.insert({MBR2,right_node});
+    new_elements.insert({MBR1,node1});
+    new_elements.insert({MBR2,node2});
     temp->elements = new_elements;
 }
 
@@ -115,7 +114,7 @@ void Rtree::overflow_leaf(Node* temp){
 Rectangle Rtree::MBR(vector<Neighborhood> neighs){
     Coordinate min(neighs[0].get_bounds().get_min("lon"),neighs[0].get_bounds().get_min("lat"));
     Coordinate max(neighs[0].get_bounds().get_max("lon"),neighs[0].get_bounds().get_max("lat"));
-    for(int i = 1; i<neighs.size(); i++){
+    for(int i = 1; i<=neighs.size(); i++){
         if(neighs[i].get_bounds().get_min("lon")<min.longitude)
             min.longitude = neighs[i].get_bounds().get_min("lon");
         if(neighs[i].get_bounds().get_min("lat")<min.longitude)
@@ -132,7 +131,7 @@ Rectangle Rtree::MBR(vector<Neighborhood> neighs){
 //PUBLIC
 
 Rtree::Rtree(int range){
-    root = nullptr;
+    root = new Node();
     max_range = range;
 }
 

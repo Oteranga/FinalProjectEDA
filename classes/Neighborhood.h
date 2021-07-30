@@ -20,7 +20,7 @@ class Neighborhood{
             return false;
         }
 
-        Rectangle get_bounds(){
+        Rectangle get_bounds() const{
             return bounds;
         }
 };
