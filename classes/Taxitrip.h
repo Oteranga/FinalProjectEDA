@@ -1,5 +1,7 @@
 #pragma once
-#include "Node.h"
+#include "Coordinate.h"
+
+using namespace std;
 
 struct TaxiTrip{
     int trip_id;

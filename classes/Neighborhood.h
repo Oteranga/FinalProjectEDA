@@ -1,5 +1,6 @@
 #pragma once
-#include "Node.h"
+#include <vector>
+#include "Rectangle.h"
 
 class Neighborhood{
     private:
@@ -11,6 +12,10 @@ class Neighborhood{
         Rectangle bounds;
 
     public:
+        Neighborhood(Rectangle rect):bounds(rect){}
+
+        Neighborhood(){}
+
         bool is_inside(Coordinate coord){
             return false;
         }
