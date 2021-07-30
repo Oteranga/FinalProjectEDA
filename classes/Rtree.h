@@ -108,20 +108,21 @@ void Rtree::overflow_leaf(Node* temp){
     new_elements.insert({MBR1,node1});
     new_elements.insert({MBR2,node2});
     temp->elements = new_elements;
+    temp->data.clear();
 }
 
 
 Rectangle Rtree::MBR(vector<Neighborhood> neighs){
     Coordinate min(neighs[0].get_bounds().get_min("lon"),neighs[0].get_bounds().get_min("lat"));
     Coordinate max(neighs[0].get_bounds().get_max("lon"),neighs[0].get_bounds().get_max("lat"));
-    for(int i = 1; i<=neighs.size(); i++){
+    for(int i = 1; i<neighs.size(); i++){
         if(neighs[i].get_bounds().get_min("lon")<min.longitude)
             min.longitude = neighs[i].get_bounds().get_min("lon");
-        if(neighs[i].get_bounds().get_min("lat")<min.longitude)
+        if(neighs[i].get_bounds().get_min("lat")<min.latitude)
             min.latitude = neighs[i].get_bounds().get_min("lat");
         if(neighs[i].get_bounds().get_max("lon")>max.longitude)
             max.longitude = neighs[i].get_bounds().get_max("lon");
-        if(neighs[i].get_bounds().get_max("lat")>max.longitude)
+        if(neighs[i].get_bounds().get_max("lat")>max.latitude)
             max.latitude = neighs[i].get_bounds().get_max("lat");
     }
     return Rectangle(min,max);

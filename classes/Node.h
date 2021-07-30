@@ -7,6 +7,14 @@
 
 using namespace std;
 
+bool sort_neighs(const Neighborhood &N1, const Neighborhood &N2){
+    Rectangle R1 = N1.get_bounds();
+    Rectangle R2 = N2.get_bounds();
+    double r1_dist = R1.get_dist(Rectangle({0,0},{0,0}));
+    double r2_dist = R2.get_dist(Rectangle({0,0},{0,0}));
+    return r1_dist < r2_dist;
+}
+
 struct Node{
     vector<Neighborhood> data;
     map<Rectangle,Node*> elements;
@@ -22,12 +30,3 @@ struct Node{
         sort(data.begin(), data.end(),&sort_neighs);
     }
 };
-
-
-bool sort_neighs(const Neighborhood &N1, const Neighborhood &N2){
-    Rectangle R1 = N1.get_bounds();
-    Rectangle R2 = N2.get_bounds();
-    double r1_dist = R1.get_dist(Rectangle({0,0},{0,0}));
-    double r2_dist = R2.get_dist(Rectangle({0,0},{0,0}));
-    return r1_dist < r2_dist;
-}
