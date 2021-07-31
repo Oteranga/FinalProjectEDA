@@ -20,10 +20,10 @@ struct Node{
     map<Rectangle,Node*> elements;
 
     Node(){
-        elements.insert(pair<Rectangle,Node*>(Rectangle({0,0},{0,0}),nullptr));
+        //elements.insert(pair<Rectangle,Node*>(Rectangle({0,0},{0,0}),nullptr));
     }
 
-    bool is_leaf(){ return elements.size()==1; }
+    bool is_leaf(){ return elements.empty(); }
 
     void add_element(Neighborhood neighborhood){
         data.push_back(neighborhood);

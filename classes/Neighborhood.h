@@ -23,4 +23,9 @@ class Neighborhood{
         Rectangle get_bounds() const{
             return bounds;
         }
+
+        void print_neighborhood(){
+            cout << "Neighborhood: ";
+            bounds.print_rectangle();
+        }
 };
