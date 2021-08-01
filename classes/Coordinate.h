@@ -8,14 +8,14 @@ struct Coordinate{
     Coordinate(){}
 
     bool operator<(const Coordinate &coords)const{
-        return longitude < coords.longitude && latitude < coords.latitude;
+        return this->longitude < coords.longitude && this->latitude < coords.latitude;
     }
 
     bool operator==(const Coordinate &coords)const{
-        return longitude == coords.longitude && latitude == coords.latitude;
+        return this->longitude == coords.longitude && this->latitude == coords.latitude;
     }
 
     bool operator!=(const Coordinate &coords)const{
-        return longitude != coords.longitude && latitude != coords.latitude;
+        return this->longitude != coords.longitude && this->latitude != coords.latitude;
     }
 };

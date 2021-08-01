@@ -31,10 +31,10 @@ class Neighborhood{
         }
 
         bool operator!=(const Neighborhood &neighborhood)const{
-            return bounds != neighborhood.bounds;
+            return this->bounds != neighborhood.bounds;
         }
 
         bool operator==(const Neighborhood &neighborhood)const{
-            return bounds == neighborhood.bounds;
+            return this->bounds == neighborhood.bounds;
         }
 };

@@ -23,17 +23,20 @@ class Rectangle{
         double area();
         double area_to_increase(Rectangle R1);
 
-        bool operator==(const Rectangle &rect) const{
-            return min_bound == rect.min_bound && max_bound == rect.max_bound;
+        bool operator==(const Rectangle  &rect) const{
+            return this->min_bound.longitude == rect.min_bound.longitude
+            && this->min_bound.latitude == rect.min_bound.latitude
+            && this->max_bound.longitude == rect.max_bound.longitude
+            && this->max_bound.latitude == rect.max_bound.latitude;
         }
 
         bool operator<(const Rectangle &rect) const{
-            return min_bound < rect.min_bound;
+            return this->min_bound < rect.min_bound;
         }
 
         bool operator!=(const Rectangle &rect)const{
-            return min_bound != rect.min_bound && 
-            max_bound != rect.max_bound;
+            return this->min_bound != rect.min_bound && 
+            this->max_bound != rect.max_bound;
         }
 };
 

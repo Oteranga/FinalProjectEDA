@@ -148,12 +148,14 @@ Neighborhood Rtree::pick(vector<Neighborhood> neighborhoods, Rectangle R1, Recta
     double max_area = 0;
     Neighborhood next_to_pick;
     for(int i=0; i<neighborhoods.size(); i++){
-        double area1 = R1.area_to_increase(neighborhoods[i].get_bounds());
-        double area2 = R2.area_to_increase(neighborhoods[i].get_bounds());
-        double area = abs(area1 - area2);
-        if(area > max_area){
-            max_area = area;
-            next_to_pick = neighborhoods[i];
+        if(neighborhoods[i].get_bounds() != R1 && neighborhoods[i].get_bounds() != R2){
+            double area1 = R1.area_to_increase(neighborhoods[i].get_bounds());
+            double area2 = R2.area_to_increase(neighborhoods[i].get_bounds());
+            double area = abs(area1 - area2);
+            if(area > max_area){
+                max_area = area;
+                next_to_pick = neighborhoods[i];
+            }
         }
     }
     return next_to_pick;
@@ -163,15 +165,16 @@ void Rtree::set_position(vector<Neighborhood> neighborhoods, Node* node1, Node* 
     Rectangle R1 = node1->data[0].get_bounds();
     Rectangle R2 = node2->data[0].get_bounds();
     int i=0;
-    while(node1->data.size()<(M-m+1) || node2->data.size()<(M-m+1) || i<neighborhoods.size()-1){
-        if(neighborhoods[i] != node1->data[0] || neighborhoods[i] != node2->data[0]){
-            Neighborhood neigh = pick(neighborhoods,R1,R2);
+    while(node1->data.size()<(M-m+1) && node2->data.size()<(M-m+1) && i<neighborhoods.size()){
+        if(neighborhoods[i] != node1->data[0] && neighborhoods[i] != node2->data[0]){
+            //Neighborhood neigh = pick(neighborhoods,R1,R2);
+            Neighborhood neigh = neighborhoods[i];
             double a1 = R1.area_to_increase(neigh.get_bounds());
             double a2 = R2.area_to_increase(neigh.get_bounds());
             if(a1 < a2) node1->data.push_back(neigh);
             else if(a2 < a1) node2->data.push_back(neigh);
-            i++;
         }
+        i++;
     }
     if(i<neighborhoods.size()-1){
         if(node1->data.size()==(M-m+1)){ 
@@ -199,8 +202,8 @@ void Rtree::overflow_leaf(Node* temp){
     
     Rectangle MBR1 = MBR(node1->data);
     Rectangle MBR2 = MBR(node2->data);
-    temp->elements.insert({MBR1,node1});
-    temp->elements.insert({MBR2,node2});
+    temp->elements[MBR1] = node1;
+    temp->elements[MBR2] = node2;
     temp->data.clear();
 }
 
