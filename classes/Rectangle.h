@@ -20,25 +20,28 @@ class Rectangle{
         double get_dist(Rectangle rect)const;
         Rectangle MBR(Rectangle rect);
         void print_rectangle()const;
+        double area();
+        double area_to_increase(Rectangle R1);
 
         bool operator==(const Rectangle &rect) const{
-            double this_dist = get_dist(Rectangle({0,0},{0,0}));
-            double rect_dist = rect.get_dist(Rectangle({0,0},{0,0}));
-            return this_dist == rect_dist;
+            return min_bound == rect.min_bound && max_bound == rect.max_bound;
         }
 
         bool operator<(const Rectangle &rect) const{
-            double this_dist = get_dist(Rectangle({0,0},{0,0}));
-            double rect_dist = rect.get_dist(Rectangle({0,0},{0,0}));
-            return this_dist < rect_dist;
+            return min_bound < rect.min_bound;
+        }
+
+        bool operator!=(const Rectangle &rect)const{
+            return min_bound != rect.min_bound && 
+            max_bound != rect.max_bound;
         }
 };
 
 
 void Rectangle::print_rectangle()const{
-    cout << "MIN: (" << min_bound.latitude << " , " << min_bound.longitude << ")";
+    cout << "MIN: (" << min_bound.longitude << " , " << min_bound.latitude << ")";
     cout << endl;
-    cout << "MAX: (" << max_bound.latitude << " , " << max_bound.longitude << ")";
+    cout << "MAX: (" << max_bound.longitude << " , " << max_bound.latitude << ")";
     cout << endl;
 }
 
@@ -114,4 +117,17 @@ Rectangle Rectangle::MBR(Rectangle rect){
         new_rect.set_max(this->get_max("lon"),"lon");
 
     return new_rect;
+}
+
+double Rectangle::area(){
+    double min_lat = this->get_min("lat");
+    double min_long = this->get_min("lon");
+    double max_lat = this->get_max("lat");
+    double max_long = this->get_max("lon");
+    return (max_long - min_long) * (max_lat - min_lat);
+}
+
+
+double Rectangle::area_to_increase(Rectangle R1){
+    return MBR(R1).area() - this->area(); 
 }

@@ -5,10 +5,13 @@ using namespace std;
 
 int main(){
     Rtree rtree(3);
-    rtree.insert(Neighborhood(Rectangle({3,4},{4,5}))); //LM
-    rtree.insert(Neighborhood(Rectangle({12,1},{13,2}))); //LLLLM
-    rtree.insert(Neighborhood(Rectangle({6,2},{7,3}))); //LL1
-    rtree.insert(Neighborhood(Rectangle({8,2},{9,3}))); //LLL1
+    rtree.insert(Neighborhood(Rectangle({3,4},{4,5}))); 
+    rtree.insert(Neighborhood(Rectangle({12,1},{13,2})));
+    rtree.insert(Neighborhood(Rectangle({6,2},{7,3})));
+    rtree.insert(Neighborhood(Rectangle({8,2},{9,3}))); 
+    //rtree.insert(Neighborhood(Rectangle({8,4},{9,5}))); 
+    //rtree.insert(Neighborhood(Rectangle({11,7},{12,8}))); 
+
     rtree.print();
     return 0;
 }

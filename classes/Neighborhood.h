@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <vector>
 #include "Rectangle.h"
 
 class Neighborhood{
@@ -20,12 +21,20 @@ class Neighborhood{
             return false;
         }
 
-        Rectangle get_bounds() const{
+        Rectangle get_bounds()const{
             return bounds;
         }
 
         void print_neighborhood(){
-            cout << "Neighborhood: ";
+            cout << "Neighborhood: \n";
             bounds.print_rectangle();
+        }
+
+        bool operator!=(const Neighborhood &neighborhood)const{
+            return bounds != neighborhood.bounds;
+        }
+
+        bool operator==(const Neighborhood &neighborhood)const{
+            return bounds == neighborhood.bounds;
         }
 };
