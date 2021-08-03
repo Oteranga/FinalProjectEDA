@@ -11,6 +11,8 @@ int main(){
     rtree.insert(Neighborhood(Rectangle({8,2},{9,3}))); 
     rtree.insert(Neighborhood(Rectangle({8,4},{9,5}))); 
     rtree.insert(Neighborhood(Rectangle({11,7},{12,8}))); 
+    rtree.insert(Neighborhood(Rectangle({11,3},{12,4}))); 
+    rtree.insert(Neighborhood(Rectangle({14,6},{15,7}))); 
 
     rtree.print();
     return 0;

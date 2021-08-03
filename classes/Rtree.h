@@ -15,15 +15,21 @@ class Rtree{
         int M;
         int m;
         Node* root;
-        Rectangle MBR(vector<Neighborhood> neighs);
+        Rectangle MBR_leaf(vector<Neighborhood> neighs);
+        Rectangle MBR_inner(map<Rectangle,Node*> elems);
         vector<TaxiTrip> get_trips();
         bool same_neighborhood(TaxiTrip taxi_trip);
         void top5_neighborhoods(Node* current, vector<Neighborhood> &result);
         bool trips_begin();
-        void overflow_leaf(Node* temp);
+        void overflow_leaf(pair<Rectangle, Node*> temp, Node* parent = NULL);
+        void overflow_inner(Rectangle rect, Node* temp);
         pair<Neighborhood,Neighborhood> farthest_pair_leaf(vector<Neighborhood> neighborhoods);
-        void set_position(vector<Neighborhood> neighborhoods, Node* node1, Node* node2);
-        void insert_rec(Node* temp, Neighborhood neighborhood);
+        pair<Rectangle,Rectangle> farthest_pair_inner(map<Rectangle,Node*> elems);
+        void set_position_leaf(vector<Neighborhood> neighborhoods, Node* node1, Node* node2);
+        void set_position_inner(map<Rectangle,Node*> elems, Node* node1, Node* node2);
+        pair<int,Neighborhood> pick_leaf(vector<Neighborhood> neighborhoods, Rectangle R1, Rectangle R2);
+        pair<Rectangle,Node*> pick_inner(map<Rectangle,Node*> elems, Rectangle R1, Rectangle R2);
+        void insert_rec(Node* temp, Neighborhood neighborhood, Node* parent = NULL);
         Node* search_rec(Node* temp, Rectangle rect);
         void print_rec(Node* temp);
 
@@ -90,11 +96,11 @@ Node* Rtree::search_rec(Node* temp, Rectangle rect){
 }
 
 
-void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
+void Rtree::insert_rec(Node* temp, Neighborhood neighborhood, Node* parent){
     if(temp->is_leaf()){
         temp->data.push_back(neighborhood);
         if(temp->data.size()>M){
-            overflow_leaf(temp);
+            overflow_leaf({MBR_leaf(temp->data),temp}, parent);
         }
     } else{
         map<Rectangle,Node*> elems = temp->elements;
@@ -106,7 +112,7 @@ void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
         for(auto it = elems.begin(); it != elems.end(); it++){
             Rectangle it_rect = it->first;
             if(it_rect.inside_bounds(neighborhood.get_bounds())){
-                insert_rec(it->second, neighborhood);
+                insert_rec(it->second, neighborhood, temp);
                 closest_rect = false;
                 break;
             } else {
@@ -125,16 +131,37 @@ void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
             pair<Rectangle,Node*> new_elem{rect,node_base};
             temp->elements.erase(rect_base);
             temp->elements.insert(new_elem);
-            insert_rec(node_base,neighborhood);
+            insert_rec(node_base, neighborhood, temp);
+            if(parent->elements.size()>M)
+                overflow_inner(MBR_inner(parent->elements),parent);
         }
     }
+}
+
+pair<Rectangle,Rectangle> Rtree::farthest_pair_inner(map<Rectangle,Node*> elems){
+    pair<Rectangle,Rectangle> farthest;
+    double max_area = 0;
+    for(auto it = elems.begin(); it != elems.end(); it++){
+        for(auto it2 = next(it); it2 != elems.end(); it2++){
+            Rectangle rect1 = it->first;
+            Rectangle rect2 = it2->first;
+            Rectangle temp_rect = rect1.MBR(rect2);
+            double area = temp_rect.area() - rect1.area() - rect2.area();
+            if(area > max_area){
+                max_area = area;
+                farthest.first = rect1;
+                farthest.second = rect2;
+            }
+        }
+    }
+    return farthest;
 }
 
 pair<Neighborhood,Neighborhood> Rtree::farthest_pair_leaf(vector<Neighborhood> neighborhoods){
     pair<Neighborhood,Neighborhood> farthest;
     double max_area = 0;
     for(int i=0; i<neighborhoods.size(); i++){
-        for(int j=i+1; j<neighborhoods.size()+1; j++){
+        for(int j=i+1; j<neighborhoods.size(); j++){
             Rectangle rect1 = neighborhoods[i].get_bounds();
             Rectangle rect2 = neighborhoods[j].get_bounds();
             Rectangle temp_rect = rect1.MBR(rect2);
@@ -149,56 +176,158 @@ pair<Neighborhood,Neighborhood> Rtree::farthest_pair_leaf(vector<Neighborhood> n
     return farthest;
 }
 
+void Rtree::set_position_inner(map<Rectangle,Node*> elems, Node* node1, Node* node2){
+    Rectangle R1 = node1->elements.begin()->first;
+    Rectangle R2 = node2->elements.begin()->first;
+    map<Rectangle,Node*> temp_elems = elems;
+    while(1){
+        if(temp_elems.size()==0 || (node1->elements.size()>=(M-m+1)) || (node2->elements.size()>=(M-m+1))) break;
+        pair<Rectangle,Node*> elem = pick_inner(elems,R1,R2);
+        if(elem.first != R1 && elem.first != R2){
+            double a1 = R1.area_to_increase(elem.first);
+            double a2 = R2.area_to_increase(elem.first);
+            if(a1 < a2) node1->elements.insert(elem);
+            else if(a2 < a1) node2->elements.insert(elem);
+            else if(node1->elements.size() < node2->elements.size()) node1->elements.insert(elem);
+            else node2->elements.insert(elem);
+        }
+        temp_elems.erase(elem.first);
+    }
 
-void Rtree::set_position(vector<Neighborhood> neighborhoods, Node* node1, Node* node2){
+    if(node1->elements.size()==(M-m+1)){ 
+        for(auto it = elems.begin(); it!=temp_elems.end(); it++){
+            node2->elements.insert(*it);
+        }
+    } else if(node2->elements.size()==(M-m+1)){
+        for(auto it = elems.begin(); it!=temp_elems.end(); it++){
+            node1->elements.insert(*it);
+        }
+    }
+
+}
+
+void Rtree::set_position_leaf(vector<Neighborhood> neighborhoods, Node* node1, Node* node2){
     Rectangle R1 = node1->data[0].get_bounds();
     Rectangle R2 = node2->data[0].get_bounds();
-    int i=0;
-    while(node1->data.size()<(M-m+1) && node2->data.size()<(M-m+1) && i<neighborhoods.size()){
-        if(neighborhoods[i] != node1->data[0] && neighborhoods[i] != node2->data[0]){
-            Neighborhood neigh = neighborhoods[i];
-            double a1 = R1.area_to_increase(neigh.get_bounds());
-            double a2 = R2.area_to_increase(neigh.get_bounds());
-            if(a1 < a2) node1->data.push_back(neigh);
-            else if(a2 < a1) node2->data.push_back(neigh);
+    vector<Neighborhood> temp_neighs = neighborhoods;
+    while(1){
+        if(temp_neighs.size()==0 || (node1->data.size()>=(M-m+1)) || (node2->data.size()>=(M-m+1))) break;
+        pair<int,Neighborhood> neigh = pick_leaf(temp_neighs,R1,R2);
+        if(!(neigh.second == node1->data[0]) && !(neigh.second == node2->data[0])){
+            double a1 = R1.area_to_increase(neigh.second.get_bounds());
+            double a2 = R2.area_to_increase(neigh.second.get_bounds());
+            if(a1 < a2) node1->data.push_back(neigh.second);
+            else if(a2 < a1) node2->data.push_back(neigh.second);
+            else if(node1->elements.size() < node2->elements.size()) node1->data.push_back(neigh.second);
+            else node2->data.push_back(neigh.second);   
         }
-        i++;
+        temp_neighs.erase(temp_neighs.begin()+neigh.first);
     }
-    if(i<neighborhoods.size()-1){
-        if(node1->data.size()==(M-m+1)){ 
-            for(int j=i; j<neighborhoods.size(); j++){
-                node2->data.push_back(neighborhoods[j]);
-            }
-        } else if(node2->data.size()==(M-m+1)){
-            for(int j=i; j<neighborhoods.size(); j++){
-                node1->data.push_back(neighborhoods[j]);
-            }
+
+    if(node1->data.size()==(M-m+1)){ 
+        for(int i=0; i<temp_neighs.size(); i++){
+            node2->data.push_back(temp_neighs[i]);
+        }
+    } else if(node2->data.size()==(M-m+1)){
+        for(int i=0; i<temp_neighs.size(); i++){
+            node1->data.push_back(temp_neighs[i]);
         }
     }
 }
 
+pair<int,Neighborhood> Rtree::pick_leaf(vector<Neighborhood> neighborhoods, Rectangle R1, Rectangle R2){
+    double max_area = 0;
+    Neighborhood next_to_pick;
+    int neigh_pos=0;
+    for(int i=0; i<neighborhoods.size(); i++){
+        if(!(neighborhoods[i].get_bounds() == R1 && neighborhoods[i].get_bounds() == R2)){
+            double area1 = R1.area_to_increase(neighborhoods[i].get_bounds());
+            double area2 = R2.area_to_increase(neighborhoods[i].get_bounds());
+            double area = abs(area1 - area2);
+            if(area > max_area){
+                max_area = area;
+                next_to_pick = neighborhoods[i];
+                neigh_pos = i;
+            }
+        }
+    }
+    return {neigh_pos,next_to_pick};
+}
 
-void Rtree::overflow_leaf(Node* temp){
+pair<Rectangle,Node*> Rtree::pick_inner(map<Rectangle,Node*> elems, Rectangle R1, Rectangle R2){
+    double max_area = 0;
+    pair<Rectangle,Node*> next_to_pick;
+    for(auto it = elems.begin(); it != elems.end(); it++){
+        if(!(it->first == R1 && it->first == R2)){
+            double area1 = R1.area_to_increase(it->first);
+            double area2 = R2.area_to_increase(it->first);
+            double area = abs(area1 - area2);
+            if(area > max_area){
+                max_area = area;
+                next_to_pick = *it;
+            }
+        }
+    }
+    return next_to_pick;
+}
+
+
+void Rtree::overflow_inner(Rectangle rect, Node* temp){
     Node* node1 = new Node();
     Node* node2 = new Node();
-    vector<Neighborhood> temp_data = temp->data;
+    map<Rectangle,Node*> temp_elems = temp->elements;
+    pair<Rectangle,Rectangle> farthest = farthest_pair_inner(temp_elems);
+    node1->elements.insert({farthest.first,temp->elements[farthest.first]});
+    node2->elements.insert({farthest.second,temp->elements[farthest.second]});
+    
+    set_position_inner(temp->elements,node1,node2);
+    
+    Rectangle MBR1 = MBR_inner(node1->elements);
+    Rectangle MBR2 = MBR_inner(node2->elements);
+    temp->elements.erase(rect);
+    temp->elements.insert({MBR1,node1});
+    temp->elements.insert({MBR2,node2});
+}
+
+
+void Rtree::overflow_leaf(pair<Rectangle,Node*> temp, Node* parent){
+    Node* node1 = new Node();
+    Node* node2 = new Node();
+    vector<Neighborhood> temp_data = temp.second->data;
     pair<Neighborhood,Neighborhood> farthest = farthest_pair_leaf(temp_data);
     node1->data.push_back(farthest.first);
     node2->data.push_back(farthest.second);
     
-    set_position(temp->data,node1,node2);
+    set_position_leaf(temp.second->data,node1,node2);
     
-    Rectangle MBR1 = MBR(node1->data);
-    Rectangle MBR2 = MBR(node2->data);
-    temp->elements.insert({MBR1,node1});
-    temp->elements.insert({MBR2,node2});
-    /* temp->elements[MBR1] = node1;
-    temp->elements[MBR2] = node2; */
-    temp->data.clear();
+    Rectangle MBR1 = MBR_leaf(node1->data);
+    Rectangle MBR2 = MBR_leaf(node2->data);
+    parent->elements.erase(temp.first);
+    parent->elements.insert({MBR1,node1});
+    parent->elements.insert({MBR2,node2});
+    temp.second->data.clear();
 }
 
+Rectangle Rtree::MBR_inner(map<Rectangle,Node*> elems){
+    map<Rectangle,Node*> temp_elems = elems;
+    Rectangle rect = temp_elems.begin()->first;
+    Coordinate min(rect.get_min("lon"),rect.get_min("lat"));
+    Coordinate max(rect.get_max("lon"),rect.get_max("lat"));
+    for(auto it = elems.begin(); it != elems.end(); it++){
+        auto temp_it = it->first;
+        if(temp_it.get_min("lon")<min.longitude)
+            min.longitude = temp_it.get_min("lon");
+        if(temp_it.get_min("lat")<min.latitude)
+            min.latitude = temp_it.get_min("lat");
+        if(temp_it.get_max("lon")>max.longitude)
+            max.longitude = temp_it.get_max("lon");
+        if(temp_it.get_max("lat")>max.latitude)
+            max.latitude = temp_it.get_max("lat");
+    }
+    return Rectangle(min,max);
+}
 
-Rectangle Rtree::MBR(vector<Neighborhood> neighs){
+Rectangle Rtree::MBR_leaf(vector<Neighborhood> neighs){
     Coordinate min(neighs[0].get_bounds().get_min("lon"),neighs[0].get_bounds().get_min("lat"));
     Coordinate max(neighs[0].get_bounds().get_max("lon"),neighs[0].get_bounds().get_max("lat"));
     for(int i = 1; i<neighs.size(); i++){
@@ -220,7 +349,7 @@ Rectangle Rtree::MBR(vector<Neighborhood> neighs){
 Rtree::Rtree(int range){
     root = new Node();
     M = range;
-    m = ceil(M/2);
+    m = ceil(range/2.0);
 }
 
 void Rtree::print(){
@@ -230,7 +359,7 @@ void Rtree::print(){
 
 void Rtree::insert(Neighborhood neighborhood){
     auto temp = this->root;
-    insert_rec(temp,neighborhood);
+    insert_rec(temp,neighborhood,temp);
 }
 
 
