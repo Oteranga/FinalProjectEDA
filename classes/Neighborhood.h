@@ -46,4 +46,9 @@ class Neighborhood{
         bool operator==(const Neighborhood &neighborhood) const{
             return this->bounds == neighborhood.bounds;
         }
+
 };
+
+bool top_5(const Neighborhood &Neigh1, const Neighborhood &Neigh2){
+    return Neigh1.number_of_trips > Neigh2.number_of_trips;
+}

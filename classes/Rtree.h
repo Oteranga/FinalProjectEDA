@@ -9,6 +9,7 @@
 #include "Node.h"
 #include "Neighborhood.h"
 #include "Rectangle.h"
+#include "Coordinate.h"
 
 class Rtree{
     private:
@@ -22,7 +23,7 @@ class Rtree{
         //Auxiliar functions for query functions
         bool same_neighborhood(Node* temp, TaxiTrip taxitrip);
         void top5_neighborhoods(Node* temp, Coordinate start_point, vector<Neighborhood> &result);
-        bool trips_begin_in(Rectangle rect);
+        bool trips_begin_in(Node* temp, Rectangle rect);
 
         Node* overflow_leaf(Node* temp);
         Node* overflow_inner(Node* temp);
@@ -32,7 +33,7 @@ class Rtree{
         void set_position_inner(map<Rectangle,Node*> elems, Node* node1, Node* node2);
         pair<int,Neighborhood> pick_leaf(vector<Neighborhood> neighborhoods, Rectangle R1, Rectangle R2);
         pair<Rectangle,Node*> pick_inner(map<Rectangle,Node*> elems, Rectangle R1, Rectangle R2);
-        Node* insert_rec(Node* temp, Neighborhood neighborhood);
+        void insert_rec(Node* temp, Neighborhood neighborhood);
         Node* search_rec(Node* temp, Rectangle rect);
         void print_rec(Node* temp);
 
@@ -99,27 +100,21 @@ bool Rtree::same_neighborhood(Node* temp, TaxiTrip taxitrip){
 }
 
 
-void Rtree::top5_neighborhoods(Node* temp, Coordinates start_point, vector<Neighborhood> &result){
+void Rtree::top5_neighborhoods(Node* temp, Coordinate start_point, vector<Neighborhood> &result){
     if(temp->is_leaf()){
         for(int i=0; i<temp->data.size(); i++){
             result.push_back(temp->data[i]);
             Rectangle rect = temp->data[i].get_bounds();
-            if(rect.is_inside(start_point)){
-                if(temp->data[i].is_inside(taxitrip.pickup) && temp->data[i].is_inside(taxitrip.dropoff))
-                    result[i].number_of_trips++;
-            }
+            if(temp->data[i].is_inside(start_point))
+                result[i].number_of_trips++;
         }
     } else {
         for(auto it=temp->elements.begin(); it!=temp->elements.end(); it++){
             Rectangle rect = it->first;
             if(!rect.is_inside(start_point)) return;
-            else return top5_neighborhoods(it->second, start_point, result);
+            else top5_neighborhoods(it->second, start_point, result);
         }
     }
-}
-
-bool Rtree::trips_begin_in(Rectangle rect){
-    
 }
 
 
@@ -136,7 +131,7 @@ Node* Rtree::search_rec(Node* temp, Rectangle rect){
 }
 
 
-Node* Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
+void Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
     if(temp->is_leaf()){
         temp->data.push_back(neighborhood);
         if(temp->data.size()>M){
@@ -430,12 +425,10 @@ vector<Neighborhood> Rtree::query2(){
     for(int i = 0; i < trips.size(); i++){
         top5_neighborhoods(temp, trips[i].pickup, result);
     }
-    for(int i = 0; i < result.size(); i++){
-        for(int j = 0; j < trips.size(); j++){
-            if(result)
-        }
-    }
-    return result;
+
+    sort(result.begin(), result.end(),&top_5);
+    vector<Neighborhood> subresult = {result.begin(), result.begin() + 5};
+    return subresult;
 }
 
 
@@ -443,9 +436,7 @@ int Rtree::query3(Coordinate P1, Coordinate P2){
     int result;
     vector<TaxiTrip> trips = get_trips();
     Rectangle rectangle{P1, P2};
-    for(int i = 0; i < trips.size(); i++){
-        // Llamada a funcion auxiliar
-    }
+    
     return result;
 }
 

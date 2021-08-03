@@ -17,6 +17,8 @@ class Rectangle{
         double get_min(string coord_type);
         double get_max(string coord_type);
         bool inside_bounds(Rectangle new_rect);
+        bool is_inside(Coordinate coord);
+        bool intersect(Rectangle rect);
         double get_dist(Rectangle rect);
         Rectangle MBR(Rectangle rect);
         void print_rectangle();
@@ -91,6 +93,21 @@ bool Rectangle::inside_bounds(Rectangle new_rect){
         new_rect.get_min("lat") > this->get_min("lat") &&
         new_rect.get_max("lon") < this->get_max("lon") &&
         new_rect.get_max("lat") < this->get_max("lat"))
+        return true;
+    return false;
+}
+
+bool Rectangle::is_inside(Coordinate coord){
+    if(coord.longitude > this->get_min("lon") &&
+        coord.latitude > this->get_min("lat") &&
+        coord.longitude < this->get_max("lon") &&
+        coord.latitude < this->get_max("lat"))
+        return true;
+    return false;
+}
+
+bool Rectangle::intersect(Rectangle rect){
+    if(is_inside(rect.min_bound)|| is_inside(rect.max_bound))
         return true;
     return false;
 }
