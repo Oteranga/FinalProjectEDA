@@ -9,16 +9,25 @@ class Neighborhood{
         string borough;
         string geometry_type;
         vector<Coordinate> coordinates;
-        int number_of_trips;
         Rectangle bounds;
 
     public:
+        int number_of_trips;
         Neighborhood(Rectangle rect):bounds(rect){}
 
         Neighborhood(){}
 
         bool is_inside(Coordinate coord){
-            return false;
+            bool result = false;
+            for (int i = 0, j = coordinates.size()-1; i < coordinates.size(); j = i++) {
+                if(coord == coordinates[i])
+                    return true;
+                if ((((coordinates[i].latitude<=coord.latitude) && (coord.latitude<coordinates[j].latitude)) 
+                || ((coordinates[j].latitude<=coord.latitude) && (coord.latitude<coordinates[i].latitude))) &&
+                (coord.longitude < (coordinates[j].longitude - coordinates[i].longitude) * (coord.latitude - coordinates[i].latitude) / (coordinates[j].latitude - coordinates[i].latitude) + coordinates[i].longitude))
+                    result = !result; 
+            } 
+            return result; 
         }
 
         Rectangle get_bounds(){

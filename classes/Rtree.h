@@ -18,18 +18,21 @@ class Rtree{
         Rectangle MBR_leaf(vector<Neighborhood> neighs);
         Rectangle MBR_inner(map<Rectangle,Node*> elems);
         vector<TaxiTrip> get_trips();
-        bool same_neighborhood(TaxiTrip taxi_trip);
-        void top5_neighborhoods(Node* current, vector<Neighborhood> &result);
-        bool trips_begin();
-        void overflow_leaf(pair<Rectangle, Node*> temp, Node* parent = NULL);
-        void overflow_inner(Rectangle rect, Node* temp);
+
+        //Auxiliar functions for query functions
+        bool same_neighborhood(Node* temp, TaxiTrip taxitrip);
+        void top5_neighborhoods(Node* temp, Coordinate start_point, vector<Neighborhood> &result);
+        bool trips_begin_in(Rectangle rect);
+
+        Node* overflow_leaf(Node* temp);
+        Node* overflow_inner(Node* temp);
         pair<Neighborhood,Neighborhood> farthest_pair_leaf(vector<Neighborhood> neighborhoods);
         pair<Rectangle,Rectangle> farthest_pair_inner(map<Rectangle,Node*> elems);
         void set_position_leaf(vector<Neighborhood> neighborhoods, Node* node1, Node* node2);
         void set_position_inner(map<Rectangle,Node*> elems, Node* node1, Node* node2);
         pair<int,Neighborhood> pick_leaf(vector<Neighborhood> neighborhoods, Rectangle R1, Rectangle R2);
         pair<Rectangle,Node*> pick_inner(map<Rectangle,Node*> elems, Rectangle R1, Rectangle R2);
-        void insert_rec(Node* temp, Neighborhood neighborhood, Node* parent = NULL);
+        Node* insert_rec(Node* temp, Neighborhood neighborhood);
         Node* search_rec(Node* temp, Rectangle rect);
         void print_rec(Node* temp);
 
@@ -38,7 +41,8 @@ class Rtree{
         void insert(Neighborhood element);
         Node* search(Coordinate coord);
 
-        vector<TaxiTrip> query1();
+        //Query functions
+        int query1();
         vector<Neighborhood> query2();
         int query3(Coordinate P1, Coordinate P2);
         vector<TaxiTrip> query4(Coordinate P, double D);
@@ -73,12 +77,48 @@ vector<TaxiTrip> Rtree::get_trips(){
 }
 
 
-bool Rtree::same_neighborhood(TaxiTrip taxi_trip){
+bool Rtree::same_neighborhood(Node* temp, TaxiTrip taxitrip){
+    Rectangle trip_rect({taxitrip.pickup,taxitrip.dropoff});
+    if(temp->is_leaf()){
+        for(int i=0; i<temp->data.size(); i++){
+            Rectangle rect = temp->data[i].get_bounds();
+            if(rect.inside_bounds(trip_rect)){
+                if(temp->data[i].is_inside(taxitrip.pickup) && temp->data[i].is_inside(taxitrip.dropoff))
+                    return true;
+            }
+        }
+        return false;
+    } else {
+        for(auto it=temp->elements.begin(); it!=temp->elements.end(); it++){
+            Rectangle rect = it->first;
+            if(!rect.inside_bounds(trip_rect)) return false;
+            else return same_neighborhood(it->second,taxitrip);
+        }
+    }
     return false;
 }
 
 
-void Rtree::top5_neighborhoods(Node* current, vector<Neighborhood> &result){
+void Rtree::top5_neighborhoods(Node* temp, Coordinates start_point, vector<Neighborhood> &result){
+    if(temp->is_leaf()){
+        for(int i=0; i<temp->data.size(); i++){
+            result.push_back(temp->data[i]);
+            Rectangle rect = temp->data[i].get_bounds();
+            if(rect.is_inside(start_point)){
+                if(temp->data[i].is_inside(taxitrip.pickup) && temp->data[i].is_inside(taxitrip.dropoff))
+                    result[i].number_of_trips++;
+            }
+        }
+    } else {
+        for(auto it=temp->elements.begin(); it!=temp->elements.end(); it++){
+            Rectangle rect = it->first;
+            if(!rect.is_inside(start_point)) return;
+            else return top5_neighborhoods(it->second, start_point, result);
+        }
+    }
+}
+
+bool Rtree::trips_begin_in(Rectangle rect){
     
 }
 
@@ -96,11 +136,11 @@ Node* Rtree::search_rec(Node* temp, Rectangle rect){
 }
 
 
-void Rtree::insert_rec(Node* temp, Neighborhood neighborhood, Node* parent){
+Node* Rtree::insert_rec(Node* temp, Neighborhood neighborhood){
     if(temp->is_leaf()){
         temp->data.push_back(neighborhood);
         if(temp->data.size()>M){
-            overflow_leaf({MBR_leaf(temp->data),temp}, parent);
+            *temp = *overflow_leaf(temp);
         }
     } else{
         map<Rectangle,Node*> elems = temp->elements;
@@ -112,7 +152,7 @@ void Rtree::insert_rec(Node* temp, Neighborhood neighborhood, Node* parent){
         for(auto it = elems.begin(); it != elems.end(); it++){
             Rectangle it_rect = it->first;
             if(it_rect.inside_bounds(neighborhood.get_bounds())){
-                insert_rec(it->second, neighborhood, temp);
+                insert_rec(it->second, neighborhood);
                 closest_rect = false;
                 break;
             } else {
@@ -131,9 +171,9 @@ void Rtree::insert_rec(Node* temp, Neighborhood neighborhood, Node* parent){
             pair<Rectangle,Node*> new_elem{rect,node_base};
             temp->elements.erase(rect_base);
             temp->elements.insert(new_elem);
-            insert_rec(node_base, neighborhood, temp);
-            if(parent->elements.size()>M)
-                overflow_inner(MBR_inner(parent->elements),parent);
+            insert_rec(node_base, neighborhood);
+            if(temp->elements.size()>M)
+                *temp = *overflow_inner(temp);
         }
     }
 }
@@ -272,7 +312,7 @@ pair<Rectangle,Node*> Rtree::pick_inner(map<Rectangle,Node*> elems, Rectangle R1
 }
 
 
-void Rtree::overflow_inner(Rectangle rect, Node* temp){
+Node* Rtree::overflow_inner(Node* temp){
     Node* node1 = new Node();
     Node* node2 = new Node();
     map<Rectangle,Node*> temp_elems = temp->elements;
@@ -281,31 +321,34 @@ void Rtree::overflow_inner(Rectangle rect, Node* temp){
     node2->elements.insert({farthest.second,temp->elements[farthest.second]});
     
     set_position_inner(temp->elements,node1,node2);
-    
+
     Rectangle MBR1 = MBR_inner(node1->elements);
     Rectangle MBR2 = MBR_inner(node2->elements);
-    temp->elements.erase(rect);
-    temp->elements.insert({MBR1,node1});
-    temp->elements.insert({MBR2,node2});
+
+    Node* new_node = new Node();
+    new_node->elements.insert({MBR1,node1});
+    new_node->elements.insert({MBR2,node2});
+    return new_node;
 }
 
 
-void Rtree::overflow_leaf(pair<Rectangle,Node*> temp, Node* parent){
+Node* Rtree::overflow_leaf(Node* temp){
     Node* node1 = new Node();
     Node* node2 = new Node();
-    vector<Neighborhood> temp_data = temp.second->data;
+    vector<Neighborhood> temp_data = temp->data;
     pair<Neighborhood,Neighborhood> farthest = farthest_pair_leaf(temp_data);
     node1->data.push_back(farthest.first);
     node2->data.push_back(farthest.second);
     
-    set_position_leaf(temp.second->data,node1,node2);
+    set_position_leaf(temp->data,node1,node2);
     
     Rectangle MBR1 = MBR_leaf(node1->data);
     Rectangle MBR2 = MBR_leaf(node2->data);
-    parent->elements.erase(temp.first);
-    parent->elements.insert({MBR1,node1});
-    parent->elements.insert({MBR2,node2});
-    temp.second->data.clear();
+
+    Node* new_node = new Node();
+    new_node->elements.insert({MBR1,node1});
+    new_node->elements.insert({MBR2,node2});
+    return new_node;
 }
 
 Rectangle Rtree::MBR_inner(map<Rectangle,Node*> elems){
@@ -359,7 +402,7 @@ void Rtree::print(){
 
 void Rtree::insert(Neighborhood neighborhood){
     auto temp = this->root;
-    insert_rec(temp,neighborhood,temp);
+    insert_rec(temp,neighborhood);
 }
 
 
@@ -369,20 +412,29 @@ Node* Rtree::search(Coordinate coord){
 }
 
 
-vector<TaxiTrip> Rtree::query1(){
+int Rtree::query1(){
     vector<TaxiTrip> result;
     vector<TaxiTrip> trips = get_trips();
+    auto temp = this->root;
     for(int i = 0; i < trips.size(); i++){
-        if(same_neighborhood(trips[i])) result.push_back(trips[i]);
+        if(same_neighborhood(temp,trips[i])) result.push_back(trips[i]);
     }
-    return result;
+    return result.size();
 }
 
 
 vector<Neighborhood> Rtree::query2(){
+    vector<TaxiTrip> trips = get_trips();
     vector<Neighborhood> result;
-    top5_neighborhoods(root, result);
-    // Metodo de ordenacion para obtener los 5 primeros
+    auto temp = this->root;
+    for(int i = 0; i < trips.size(); i++){
+        top5_neighborhoods(temp, trips[i].pickup, result);
+    }
+    for(int i = 0; i < result.size(); i++){
+        for(int j = 0; j < trips.size(); j++){
+            if(result)
+        }
+    }
     return result;
 }
 
