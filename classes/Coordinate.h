@@ -7,15 +7,15 @@ struct Coordinate{
     Coordinate(double lon, double lat):longitude(lon),latitude(lat){}
     Coordinate(){}
 
-    bool operator<(const Coordinate &coords)const{
+    bool operator<(const Coordinate &coords){
         return this->longitude < coords.longitude && this->latitude < coords.latitude;
     }
 
-    bool operator==(const Coordinate &coords)const{
+    bool operator==(const Coordinate &coords){
         return this->longitude == coords.longitude && this->latitude == coords.latitude;
     }
 
-    bool operator!=(const Coordinate &coords)const{
+    bool operator!=(const Coordinate &coords){
         return this->longitude != coords.longitude && this->latitude != coords.latitude;
     }
 };

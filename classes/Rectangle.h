@@ -14,34 +14,42 @@ class Rectangle{
         Rectangle(){}
         void set_min(double num, string coord_type);
         void set_max(double num, string coord_type);
-        double get_min(string coord_type)const;
-        double get_max(string coord_type)const;
-        bool inside_bounds(Rectangle new_rect)const;
-        double get_dist(Rectangle rect)const;
+        double get_min(string coord_type);
+        double get_max(string coord_type);
+        bool inside_bounds(Rectangle new_rect);
+        double get_dist(Rectangle rect);
         Rectangle MBR(Rectangle rect);
-        void print_rectangle()const;
+        void print_rectangle();
         double area();
         double area_to_increase(Rectangle R1);
 
-        bool operator==(const Rectangle  &rect) const{
-            return this->min_bound.longitude == rect.min_bound.longitude
+        bool operator==(const Rectangle &rect) const{
+            if(this->min_bound.longitude == rect.min_bound.longitude
             && this->min_bound.latitude == rect.min_bound.latitude
             && this->max_bound.longitude == rect.max_bound.longitude
-            && this->max_bound.latitude == rect.max_bound.latitude;
+            && this->max_bound.latitude == rect.max_bound.latitude) return true;
+            return false;
         }
 
         bool operator<(const Rectangle &rect) const{
-            return this->min_bound < rect.min_bound;
+            Rectangle temp_rect = rect;
+            Rectangle this_rect = *this;
+            double this_dist = this_rect.get_dist(Rectangle({0,0},{0,0}));
+            double rect_dist = temp_rect.get_dist(Rectangle({0,0},{0,0}));
+            return this_dist < rect_dist;
         }
 
-        bool operator!=(const Rectangle &rect)const{
-            return this->min_bound != rect.min_bound && 
-            this->max_bound != rect.max_bound;
+        bool operator!=(const Rectangle &rect) const{
+            if(this->min_bound.longitude != rect.min_bound.longitude
+            && this->min_bound.latitude != rect.min_bound.latitude
+            && this->max_bound.longitude != rect.max_bound.longitude
+            && this->max_bound.latitude != rect.max_bound.latitude) return true;
+            return false;
         }
 };
 
 
-void Rectangle::print_rectangle()const{
+void Rectangle::print_rectangle(){
     cout << "MIN: (" << min_bound.longitude << " , " << min_bound.latitude << ")";
     cout << endl;
     cout << "MAX: (" << max_bound.longitude << " , " << max_bound.latitude << ")";
@@ -62,7 +70,7 @@ void Rectangle::set_max(double num, string coord_type){
         max_bound.latitude = num;
 }
 
-double Rectangle::get_min(string coord_type)const{
+double Rectangle::get_min(string coord_type){
     if(coord_type == "lon")
         return min_bound.longitude;
     else if(coord_type == "lat")
@@ -70,7 +78,7 @@ double Rectangle::get_min(string coord_type)const{
     return -1;
 }
 
-double Rectangle::get_max(string coord_type)const{
+double Rectangle::get_max(string coord_type){
     if(coord_type == "lon")
         return max_bound.longitude;
     else if(coord_type == "lat")
@@ -78,7 +86,7 @@ double Rectangle::get_max(string coord_type)const{
     return -1;
 }
 
-bool Rectangle::inside_bounds(Rectangle new_rect)const{
+bool Rectangle::inside_bounds(Rectangle new_rect){
     if(new_rect.get_min("lon") > this->get_min("lon") &&
         new_rect.get_min("lat") > this->get_min("lat") &&
         new_rect.get_max("lon") < this->get_max("lon") &&
@@ -87,7 +95,7 @@ bool Rectangle::inside_bounds(Rectangle new_rect)const{
     return false;
 }
 
-double Rectangle::get_dist(Rectangle rect)const{
+double Rectangle::get_dist(Rectangle rect){
     double this_lon = ((this->get_max("lon") - this->get_min("lon"))/2) + this->get_min("lon");
     double this_lat = ((this->get_max("lat") - this->get_min("lat"))/2) + this->get_min("lat");
 

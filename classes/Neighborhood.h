@@ -21,7 +21,7 @@ class Neighborhood{
             return false;
         }
 
-        Rectangle get_bounds()const{
+        Rectangle get_bounds(){
             return bounds;
         }
 
@@ -30,11 +30,11 @@ class Neighborhood{
             bounds.print_rectangle();
         }
 
-        bool operator!=(const Neighborhood &neighborhood)const{
+        bool operator!=(const Neighborhood &neighborhood) const{
             return this->bounds != neighborhood.bounds;
         }
 
-        bool operator==(const Neighborhood &neighborhood)const{
+        bool operator==(const Neighborhood &neighborhood) const{
             return this->bounds == neighborhood.bounds;
         }
 };
